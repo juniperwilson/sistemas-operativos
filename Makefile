@@ -7,10 +7,10 @@ SOchain: $(OBJECTOS)
 	$(CC) $(addprefix $(ODIR)/,$(OBJECTOS)) -o bin/SOchain
 
 %.o: src/%.c $($@)
-	$(CC) -I inc -o $(ODIR)/$@ -c $<
+	$(CC) -I $(IDIR) -o $(ODIR)/$@ -c $<
 
 clean:
-	rm -f obj/*.o SOchain
+	rm -f $(ODIR)/*.o SOchain
 
 
 
