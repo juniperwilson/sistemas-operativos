@@ -1,3 +1,10 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include "memory.h"
+
 void* allocate_dynamic_memory(int size) {
 
     if (size == 0) {
@@ -16,9 +23,9 @@ void* allocate_dynamic_memory(int size) {
 
 void* create_shared_memory(char* name, int size) {
 
-    int fd = shm_open(name,);
+    int fd = shm_open(name, O_RDWR);
     if (fd == -1) {
-        perror("Error: shm fail")
+        perror("Error: shm fail");
         exit(1);
     }
 
@@ -69,9 +76,9 @@ void write_main_wallets_buffer(struct ra_buffer* buffer, int buffer_size, struct
     
     int i;
     for (i = 0; i < buffer_size; i++) {
-        if (buffer.ptrs[i] == 0) {
-            buffer->buffer[i] = tx;
-            buffer.ptrs[i] == 1;
+        if (*(buffer->ptrs+i) == 0) {
+            *(buffer->buffer+i) = *tx;
+            *(buffer->ptrs+i) = 1;
             break;
         }
     }
@@ -83,11 +90,11 @@ void write_main_wallets_buffer(struct ra_buffer* buffer, int buffer_size, struct
  */
 void write_wallets_servers_buffer(struct circ_buffer* buffer, int buffer_size, struct transaction* tx) {
 
-        if (buffer->ptrs.in == buffer->ptrs.out) {
-            break;
+        if (buffer->ptrs->in == buffer->ptrs->out) {
+            return;
         }
-        buffer->buffer[buffer->ptrs.in] = tx;
-        buffer->ptrs.in = (buffer->ptrs.in + 1) % buffer_size;
+        *(buffer->buffer+(buffer->ptrs->in)) = *tx;
+        buffer->ptrs->in = (buffer->ptrs->in) + 1 % buffer_size;
 }
 
 /* Função que escreve uma transação no buffer de memória partilhada entre os servidores e a Main, a qual 
@@ -108,11 +115,11 @@ void read_main_wallets_buffer(struct ra_buffer* buffer, int wallet_id, int buffe
     
     int i;
     for (i = 0; i < buffer_size; i++) {
-        if (buffer.ptrs[i] == 1 && buffer->buffer.wallet_signature == wallet_id) {
-            tx = buffer->buffer[i];
-            buffer.ptrs[i] = 0;
+        if ((buffer->ptrs + i == 1) && (buffer->buffer->wallet_signature == wallet_id)) {
+            tx = buffer->buffer + i;
+            *(buffer->ptrs + i) = 0;
         } else {
-            tx->i = -1;
+            tx->id = -1;
         }
     }
 }
@@ -123,12 +130,12 @@ void read_main_wallets_buffer(struct ra_buffer* buffer, int wallet_id, int buffe
  * afeta tx->id com o valor -1.
  */
 void read_wallets_servers_buffer(struct circ_buffer* buffer, int buffer_size, struct transaction* tx) {
-    if (buffer->ptrs.in == buffer->ptrs.out) {
+    if (buffer->ptrs->in == buffer->ptrs->out) {
         tx->id = -1;
-        break;
+        return;
     }
-    tx = buffer->buffer[buffer->ptrs.out];
-    buffer->ptrs.out = (buffer->ptrs.out + 1) % buffer_size;
+    *tx = *(buffer->buffer + buffer->ptrs->out);
+    buffer->ptrs->out = buffer->ptrs->out + 1 % buffer_size;
 }
 
 /* Função que lê uma transação do buffer entre os servidores e a Main, se houver alguma disponível para ler 
@@ -139,11 +146,11 @@ void read_servers_main_buffer(struct ra_buffer* buffer, int tx_id, int buffer_si
 
     int i;
     for (i = 0; i < buffer_size; i++) {
-        if (buffer.ptrs[i] == 1 && buffer->buffer.server_signature == tx_id) {
-            tx = buffer->buffer[i];
-            buffer.ptrs[i] = 0;
+        if (*(buffer->ptrs + i) == 1 && buffer->buffer->server_signature == tx_id) {
+            *tx = *(buffer->buffer + i);
+            buffer->ptrs[i] = 0;
         } else {
-            tx->i = -1;
+            tx->id = -1;
         }
     }
 }
