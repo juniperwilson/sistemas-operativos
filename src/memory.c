@@ -70,7 +70,7 @@ void write_main_wallets_buffer(struct ra_buffer* buffer, int buffer_size, struct
     int i;
     for (i = 0; i < buffer_size; i++) {
         if (buffer.ptrs[i] == 0) {
-            buffer.transaction[i] = tx;
+            buffer->buffer[i] = tx;
             buffer.ptrs[i] == 1;
             break;
         }
@@ -83,8 +83,11 @@ void write_main_wallets_buffer(struct ra_buffer* buffer, int buffer_size, struct
  */
 void write_wallets_servers_buffer(struct circ_buffer* buffer, int buffer_size, struct transaction* tx) {
 
-    int i;
-    for (int )
+        if (buffer->ptrs.in == buffer->ptrs.out) {
+            break;
+        }
+        buffer->buffer[buffer->ptrs.in] = tx;
+        buffer->ptrs.in = (buffer->ptrs.in + 1) % buffer_size;
 }
 
 /* Função que escreve uma transação no buffer de memória partilhada entre os servidores e a Main, a qual 
@@ -103,6 +106,46 @@ void write_servers_main_buffer(struct ra_buffer* buffer, int buffer_size, struct
  */
 void read_main_wallets_buffer(struct ra_buffer* buffer, int wallet_id, int buffer_size, struct transaction* tx) {
     
+    int i;
+    for (i = 0; i < buffer_size; i++) {
+        if (buffer.ptrs[i] == 1 && buffer->buffer.wallet_signature == wallet_id) {
+            tx = buffer->buffer[i];
+            buffer.ptrs[i] = 0;
+        } else {
+            tx->i = -1;
+        }
+    }
+}
+
+/* Função que lê uma transação do buffer entre as carteiras e os servidores, se houver alguma disponível para ler.
+ * A leitura deve ser feita tendo em conta o tipo de buffer e as regras de leitura em buffers desse tipo. Qualquer
+ * servidor pode ler qualquer transação deste buffer. Se não houver nenhuma transação disponível, 
+ * afeta tx->id com o valor -1.
+ */
+void read_wallets_servers_buffer(struct circ_buffer* buffer, int buffer_size, struct transaction* tx) {
+    if (buffer->ptrs.in == buffer->ptrs.out) {
+        tx->id = -1;
+        break;
+    }
+    tx = buffer->buffer[buffer->ptrs.out];
+    buffer->ptrs.out = (buffer->ptrs.out + 1) % buffer_size;
+}
+
+/* Função que lê uma transação do buffer entre os servidores e a Main, se houver alguma disponível para ler 
+ * e que tenha o tx->id igual a tx_id. A leitura deve ser feita tendo em conta o tipo de buffer e as regras 
+ * de leitura em buffers desse tipo. Se não houver nenhuma transação disponível, afeta tx->id com o valor -1.
+ */
+void read_servers_main_buffer(struct ra_buffer* buffer, int tx_id, int buffer_size, struct transaction* tx) {
+
+    int i;
+    for (i = 0; i < buffer_size; i++) {
+        if (buffer.ptrs[i] == 1 && buffer->buffer.server_signature == tx_id) {
+            tx = buffer->buffer[i];
+            buffer.ptrs[i] = 0;
+        } else {
+            tx->i = -1;
+        }
+    }
 }
 
 
