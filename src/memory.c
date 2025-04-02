@@ -23,7 +23,7 @@ void* allocate_dynamic_memory(int size) {
 
 void* create_shared_memory(char* name, int size) {
 
-    int fd = shm_open(name, O_RDWR);
+    int fd = shm_open(strcat("/", name), O_RDWR);
     if (fd == -1) {
         perror("Error: shm fail");
         exit(1);
@@ -60,7 +60,7 @@ void destroy_shared_memory(char* name, void* ptr, int size) {
         exit(1);
     }
 
-    ret = shm_unlink(name);
+    ret = shm_unlink(strcat("/", name));
     if (ret == -1) {
         perror("Error: shm_unlink");
         exit(1);

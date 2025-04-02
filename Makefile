@@ -3,18 +3,8 @@ IDIR = inc
 OBJECTOS = main.o process.o memory.o wallet.o server.o
 CC = gcc
 
-
-# SOchain: main.o process.o memory.o wallet.o server.o
-# 	gcc $(addprefix $(ODIR)/,$(OBJECTOS)) -o bin/SOchain
-
 SOchain: main.o process.o memory.o wallet.o server.o
 	gcc obj/main.o obj/process.o obj/memory.o obj/wallet.o obj/server.o -o bin/SOchain
-
-# %.o: src/%.c $($@)
-# 	$(CC) -I $(IDIR) -o $(ODIR)/$@ -c $<
-
-
-
 
 main.o: src/main.c inc/main.h
 	gcc -c src/main.c -o obj/main.o
