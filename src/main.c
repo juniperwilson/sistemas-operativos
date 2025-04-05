@@ -154,6 +154,35 @@ void create_processes(struct info_container* info, struct buffers* buffs) {
  */
 void user_interaction(struct info_container* info, struct buffers* buffs) {
 
+    int tx_counter;
+
+    char scan[3];
+    scanf("%3s", &scan);
+
+    if (scan == "bal") {
+        print_balance(info);
+    }
+
+    if (scan == "trx") {
+        create_transaction(&tx_counter, info, buffs);
+    }
+
+    if (scan == "rcp") {
+        receive_receipt(info, buffs);
+    }
+
+    if (scan == "stat") {
+        print_stat(tx_counter, info);
+    }
+
+    if (scan == "help") {
+        help();
+    }
+
+    if (scan == "end") {
+        *info->terminate = 1;
+        write_final_statistics(info);
+    }
 }
 
 /* Função que imprime as estatísticas finais do SOchain, incluindo 
@@ -248,7 +277,17 @@ void receive_receipt(struct info_container* info, struct buffers* buffs) {
 
     int id;
     scanf("%d",&id);
-    read_servers_main_buffer(buffs->buff_servers_main, id, info->buffers_size, );
+
+    struct transaction tx;
+
+    read_servers_main_buffer(buffs->buff_servers_main, id, info->buffers_size, &tx);
+
+    printf("trx id: %d\n", id);
+    printf("src id: %d\n", tx.src_id);
+    printf("dest id: %d\n", tx.dest_id);
+    printf("amount: %d\n", tx.amount);
+    printf("server signature: %d\n", tx.server_signature);
+    printf("wallet signature: %d\n", tx.wallet_signature);
 }
 
 /* Imprime as estatísticas atuais do sistema, incluindo as configurações iniciais
@@ -290,5 +329,26 @@ void help() {
  * a memória alocada.
  */
 int main(int argc, char *argv[]) {
+
+    struct info_container info;
+    struct buffers buffs;
+
+    main_args(argc, &argv, &info);
+
+    create_dynamic_memory_structs(&info, &buffs);
+    create_shared_memory_structs(&info, &buffs);
+
+    create_processes(&info, &buffs);
+
+    while (*info.terminate == 0) {
+        user_interaction(&info, &buffs);
+    }
+
+    wait_processes(&info);
+
+    destroy_shared_memory_structs(&info, &buffs);
+    destroy_dynamic_memory_structs(&info, &buffs);
+
+    return 0;
 
 }
